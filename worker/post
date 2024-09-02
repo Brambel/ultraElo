@@ -1,0 +1,6 @@
+#!/bin/bash
+
+curl -d '{"count":"25612864", "key2":"value2"}' -X POST http://172.17.0.1:8000/data
+curl -d '{"count":"4049"}' -X POST http://172.17.0.1:8000/data
+curl -d '{"count":"150000000"}' -X POST http://172.17.0.1:8000/data
+#curl -d '{"command":"stop"}' -X POST http://172.17.0.1:8000/command
