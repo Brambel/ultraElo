@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: default
+  labels:
+    app: {{ .Values.appName }}-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}-worker
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}-worker
+    spec:
+      containers:
+      - name: worker
+        image: workertest:{{ .Values.worker.version }}
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: RABBIT_USER
+          value: user
+        - name: RABBIT_PWD
+          value: OqKZe6JVbG0DpbyU
+        - name: DB_HOST
+          value: {{ required "db host is required!" .Values.db.host | quote }}
+        - name: DB_PORT
+          value: {{ required "db port is required!" .Values.db.port| quote }}
+        - name: DB_USER
+          value: {{ required "db host is required!" .Values.db.user | quote }}
+        - name: DB_PASS
+          value: {{ required "db port is required!" .Values.db.pass| quote }}
+        - name: DB_NAME
+          value: {{ required "db host is required!" .Values.db.name | quote }}
+        

@@ -4,10 +4,10 @@ import configparser
 import datetime
 from functools import reduce
 import json
+import os
 import time
 from typing import Counter
 import pika
-from sqlalchemy import JSON, BigInteger, Column, DateTime, Integer, MetaData, Row, Table, create_engine
 
 config = None
 table = None
@@ -32,7 +32,7 @@ def process(ch, method, prop, body):
         insert_item(data)
     ch.basic_ack(delivery_tag=method.delivery_tag)
     #this is where we would send the message back to the user
-    print(data)
+    print(f"{datetime.datetime.now().strftime("%m/%d %H:%M:%S")}, {data}")
 
 def notify_user(n, dic):
     s = ""
@@ -54,78 +54,14 @@ def format_data(header, n, fact, cost):
         'calculation_date': datetime.datetime.now()
     }
     data['factors'] = json.loads(json.dumps(fact))
-    #print(data)
     return data
 
-def get_prime_roots(n):
-    i = 2
-    factors = []
-    while i * i <= n:
-        if n % i:
-            i += 1
-        else:
-            n //= i
-            factors.append(i)
-    if n > 1:
-        factors.append(n)
-    return factors
 
 def command_callback(ch, method, prop, body):
     decoded = body.decode("utf-8")
     print(f"recived shutdown from user\n{decoded}\n")
     if 'shutdown' in decoded:
         ch.stop_consuming()
-
-#db code
-def create_table_if_none():
-    global config
-    global table
-    global engine
-
-    metadata = MetaData()
-    db_config = config['db']
-
-    #set table structure
-    table = Table(db_config['table'], metadata,
-                  Column('id', BigInteger, primary_key=True),
-                  Column('number', Integer),
-                  Column('factors', JSON),
-                  Column('cost', Integer),
-                  Column('calculation_date', DateTime))
-    
-    metadata.create_all(engine)
-
-def insert_item(data):
-    global engine
-    global table
-
-    with engine.connect() as conn:
-        result = conn.execute(table.insert(), data)
-        conn.commit()
-        print(f"rowCount: {result.rowcount}")
-
-def find_item(num):
-    global engine
-    global table
-
-    with engine.connect() as conn:
-        result = conn.execute(table.select().where(table.c['number']==num)).fetchone()
-    if result:
-        return json.dumps(result._asdict(), indent=4, sort_keys=True, default=str)
-    return None
-
-def connect_db():
-    global config
-    global engine
-
-    db_config = config['db']
-    usr = db_config['user']
-    pw = db_config['password']
-    h = db_config['host']
-    p = db_config['port']
-    n = db_config['name']
-    engine = create_engine(f"postgresql://{usr}:{pw}@{h}:{p}/{n}", echo=True)
-    create_table_if_none()
 
 def main():
     global config
@@ -134,14 +70,17 @@ def main():
     config = configparser.ConfigParser()
     config.read("config.ini")
     config.sections()
-
+    rabbit_configs = config['rabbit']
     #setup db connection
     connect_db()
 
-    rabbit_configs = config['rabbit']
+    host = 'rabbit-rabbitmq'
+    port = rabbit_configs['port']
+    user = os.environ.get("RABBIT_USER")
+    pwd = os.environ.get("RABBIT_PWD")
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host=rabbit_configs['host'], port=rabbit_configs['port'])
-    )
+        pika.ConnectionParameters(host=host, port=port,socket_timeout=None,
+                                  credentials=pika.PlainCredentials(user, pwd),heartbeat=60))
 
     channel = connection.channel()
     channel.queue_declare(queue=rabbit_configs['work_queue'])

@@ -1,0 +1,11 @@
+appName: "ultra-elo"
+
+db:
+  host: postgres-postgresql
+  port: "5432"
+  user: "postgres"
+  pass: "qrsgaG8Keu" #move to secret
+  name: "postgres"
+
+worker:
+  version: "latest"

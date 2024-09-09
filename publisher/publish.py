@@ -2,6 +2,8 @@
 
 import configparser
 from contextlib import asynccontextmanager
+import datetime
+import os
 import time
 import pika
 from fastapi import FastAPI, Request, status
@@ -22,11 +24,16 @@ async def lifespan(app: FastAPI):
     config.sections()
     rabbit_configs = config['rabbit']
 
-    host = rabbit_configs['host']
+    host = 'rabbit-rabbitmq'
     port = rabbit_configs['port']
+    user = os.environ.get("RABBIT_USER")
+    pwd = os.environ.get("RABBIT_PWD")
+
+    print(f"{datetime.datetime.now().strftime("%m/%d %H:%M:%S")}, host: {host}")
 
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host=host, port=port,socket_timeout=None)
+        pika.ConnectionParameters(host=host, port=port,socket_timeout=None,
+                                  credentials=pika.PlainCredentials(user, pwd), heartbeat=60)
     )
     yield
     # Clean up the connection
@@ -40,7 +47,7 @@ app = FastAPI(lifespan=lifespan)
 async def data(request: Request):
     try:
         incoming = await request.json()
-        print(incoming)
+        print(f"{datetime.datetime.now().strftime("%m/%d %H:%M:%S")}, {incoming}")
         data = incoming['count']
         push_to_queue(data)
 
@@ -91,4 +98,6 @@ def push_command(command):
 
 
 if __name__ == "__main__":
+
+    print(f"{datetime.datetime.now().strftime("%m/%d %H:%M:%S")}, host: {os.environ.get("RABBITMQ_HOST")}")
     uvicorn.run(app,host="0.0.0.0",port=8000)

@@ -1,0 +1,50 @@
+{
+    "title": "result",
+    "type": "object",
+    "required": ["eventName","eventLocation","eventDate","eventDistance","finishPlace",
+    "athleatFirtName","athleatLastName","recordPulledFrom","siteParticipantId"],
+    "properties":{
+        "eventName": {
+            "type": "String"
+        },
+        "eventLocation": {
+            "type": "String"
+        },
+        "eventDate": {
+            "type": "Date"
+        },
+        "eventDistance": {
+            "type": "integer"
+        },
+        "finishTime": {
+            "type": "String"
+        },
+        "finishStatus": {
+            "type": "String"
+        },
+        "finishPlace":{
+            "type": "String"
+        },
+        "athleatFirtName": {
+            "type": "String"
+        },
+        "athleatLastName": {
+            "type": "String"
+        },
+        "athleatGender": {
+            "type": "String"
+        },
+        "athleatAge": {
+            "type": "Integer"
+        },
+        "athleatBib": {
+            "type": "Integer"
+        },
+        "recordPulledFrom": {
+            "type": "String"
+        },
+        "siteParticipantId": {
+            "type": "String"
+        }
+    }
+}
