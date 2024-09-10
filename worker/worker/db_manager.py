@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 from typing import List, Optional
-from sqlalchemy import BigInteger, Column, ForeignKey, String, Integer, MetaData, Table, create_engine
+from sqlalchemy import ForeignKey, create_engine
 from sqlalchemy.orm import DeclarativeBase, mapped_column, relationship, Mapped
 
 #ORM classes
@@ -97,7 +97,7 @@ class Db_manager():
         alch_log.setLevel(logging.INFO)
         #may want to see about setting a diff log level stream?
 
-    def add_athleat(athleat_map):
+    def add_athleat_result(result_map):
         #need to impliment
         pass
 
