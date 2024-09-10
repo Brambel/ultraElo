@@ -14,25 +14,28 @@ def session():
     yield session
     session.close()
 
-def test_data_entry(session):
+def test_basic_objects(session):
 
     event1 = Event(name="race1",location="usa",date="8/15/87",distance="50k")
-    #result = Result(place=1,time="0:30:00")
-    #athleat1 = Athleat(first_name="jim",last_name="bob",age="37",overall_elo=2000)
-    #athleat2 = Db_manager.Athleat(athleat_id=2,first_name="foo",last_name="bar",age="22",overall_elo=1000)
-
+    athleat1 = Athleat(first_name="jim",last_name="bob",age="37",overall_elo=2000)
+    result = Result(place=1,time="0:30:00", event=event1, athleat=athleat1)
     session.add(event1)
-    print(session.new)
-    #session.add(result)
-    #session.add(athleat1)
+    session.add(result)
     session.commit()
 
+    #use statment select to get a list of row tuples
     stmnt = select(Event).where(Event.name == "race1")
-    ev = session.execute(stmnt).first()
-    print(f"ev: {str(ev)}")
-    #res = session.query(Result).get(result.place)
-    #ath = session.querry(Athleat).get(athleat1.athleat_id)
-    event_obj=ev._mapping['Event']
-    assert "race1" == event_obj.name
-    #assert res.place == 1
-    #assert res.athleat.athleat_id == athleat1.athleat_id
+    ev_row = session.execute(stmnt).first()
+    print(f"row-> {ev_row}")
+    ev_obj = ev_row[0]
+    print(f"ev_obj-> {ev_obj}")
+
+    #use session get for primary keys
+    res_obj = session.get(Result,(1,1))
+    ath_res = session.get(Athleat,1)
+
+    assert ev_obj.name == "race1"
+    assert res_obj.place == 1
+    assert res_obj.event_id == 1
+    assert ath_res.age == 37
+    assert res_obj.athleat.elo_50k == 1000

@@ -19,13 +19,14 @@ class Athleat(Base):
     athleat_id: Mapped[int] = mapped_column(primary_key=True)
     first_name: Mapped[str]
     last_name: Mapped[str]
+    gender: Mapped[str] = mapped_column(default='')
     age: Mapped[Optional[int]]
     ultrasignup_id: Mapped[Optional[int]]
-    overall_elo: Mapped[int]
-    elo_50k: Mapped[int]
-    elo_50m: Mapped[int]
-    elo_100k: Mapped[int]
-    elo_100m: Mapped[int]
+    overall_elo: Mapped[int] = mapped_column(default=1000)
+    elo_50k: Mapped[int] = mapped_column(default=1000)
+    elo_50m: Mapped[int] = mapped_column(default=1000)
+    elo_100k: Mapped[int] = mapped_column(default=1000)
+    elo_100m: Mapped[int] = mapped_column(default=1000)
 
     results: Mapped[List["Result"]] = relationship(back_populates="athleat")
 
@@ -46,6 +47,7 @@ class Event(Base):
     #purposly left out, test how well it works
     def __repr__(self) -> str:
         return f"Event(event_id={self.event_id!r}, name={self.name!r}, location={self.location!r}, date={self.date!r}, distance={self.distance!r}, results={self.results!r}"
+
 class Result(Base):
     __tablename__ = "results"
 
@@ -95,48 +97,9 @@ class Db_manager():
         alch_log.setLevel(logging.INFO)
         #may want to see about setting a diff log level stream?
 
-    def create_tables_if_none(self):
-        self.config
-        self.athleat_table
-        self.engine
-
-        self.metadata = MetaData()
-
-        #set table structure
-        self.athleat_table = Table("athleats", self.metadata,
-                    Column('athleat_id', BigInteger, primary_key=True),
-                    Column('first_name', String),
-                    Column('last_name', String),
-                    Column('age', Integer),
-                    Column('ultrasignup_id', Integer),
-                    Column('overall_elo', Integer),
-                    Column('50k_elo', Integer),
-                    Column('50m_elo', Integer),
-                    Column('100k_elo', Integer),
-                    Column('100m_elo', Integer),
-                    Column('events', String))
-        
-
-        self.metadata.create_all(engine)
-
-    def insert_item(data):
-        global engine
-        global table
-
-        with engine.connect() as conn: #engine.begin() as conn //commits at end of block
-            result = conn.execute(table.insert(), data)
-            conn.commit()
-            print(f"rowCount: {result.rowcount}")
-
-    def find_item(num):
-        global engine
-        global table
-
-        with engine.connect() as conn:
-            result = conn.execute(table.select().where(table.c['number']==num)).fetchone()
-        if result:
-            return json.dumps(result._asdict(), indent=4, sort_keys=True, default=str)
-        return None
+    def add_athleat(athleat_map):
+        #need to impliment
+        pass
 
     def connect_db(self):
 

@@ -22,14 +22,7 @@ def process(ch, method, prop, body):
         data = json.dumps(result)
     else:
         calc_time = time.time_ns()
-        count = Counter(get_prime_roots(int(body)))
-        cost = int(time.time_ns()) - calc_time
-        #format output msg
-        notify_user(num,count)
-
-        #save in db
-        data = format_data(prop.headers, num, count, cost)
-        insert_item(data)
+        #do work
     ch.basic_ack(delivery_tag=method.delivery_tag)
     #this is where we would send the message back to the user
     print(f"{datetime.datetime.now().strftime("%m/%d %H:%M:%S")}, {data}")
@@ -45,16 +38,15 @@ def notify_user(n, dic):
 
     print(f"the factors for {n}: {s}")
 
-def format_data(header, n, fact, cost):
-    data ={
-        'id': header['id'],
-        'number': n,
-        'factors': {},
-        'cost': int(cost),
-        'calculation_date': datetime.datetime.now()
-    }
-    data['factors'] = json.loads(json.dumps(fact))
-    return data
+def build_athleat_result_data(data):
+    raw_map = json.load(data)
+    event_map = None
+    required_keys = {'firstname','lastname','participant_id','age','gender', 'place', 'time'}
+    if set(required_keys).issubset(raw_map.keys()):
+        event_map = {'first_name':raw_map['firstname'],'last_name':raw_map['lastname'],
+                     'ultrasignup_id':raw_map['participant_id'], 'age':raw_map['age'],
+                     'gender':raw_map['gender'], 'place':raw_map['place'],'time':raw_map['time']}
+    return event_map
 
 
 def command_callback(ch, method, prop, body):
