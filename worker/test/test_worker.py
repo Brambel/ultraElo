@@ -1,7 +1,7 @@
 import json
 import os
 import pytest
-from worker.worker.scraper import build_athleat_result_data, parse_event_page
+from worker.worker.scraper import build_athleat_result_data, parse_event_page, set_logger
 
 path = os.path.split(__file__)[0]
 
@@ -38,3 +38,19 @@ def test_parse_event_page():
     assert event_map['distance'] == "10k"
     assert event_map['name'] == "Jewel of the Valley"
     assert event_map['year'] == "2023"
+
+def test_parse_event_page_bad_data():
+    set_logger()
+    assert parse_event_page("<head></head>") == None
+
+
+def test_build_athleat_bad_data():
+    #missing parts of blob
+    assert not build_athleat_result_data({"firstname": "bob"}, {'distance':"10k",'name':"fake race time",'year':2024})
+    
+    #missing parts of event
+    file = os.path.join(path,'resources/athleats.json')
+
+    with open(file, 'r') as file:
+        data = json.load(file)
+        assert not build_athleat_result_data(data[0], {})

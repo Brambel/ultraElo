@@ -3,8 +3,10 @@
 import configparser
 import datetime
 import json
+import logging
 import os
 import re
+import sys
 import pika
 
 from worker.worker.db_manager import Db_manager
@@ -13,6 +15,7 @@ from lxml import html
 
 config = None
 db = None
+logger = None
 
 def process_athleat_result(ch, method, prop, body):
     global db
@@ -28,13 +31,15 @@ def process_athleat_result(ch, method, prop, body):
 
 def parse_event_page(event_page):
     root = html.fromstring(event_page)
-    
-    distance = root.xpath("//a[@class='event_selected_link']")[0].text
-    name = root.xpath('//h1[@class="event-title"]')[0].text
-    raw_year = root.xpath('//span[@class="event-date"]')[0].text
-    year = re.search('(\d{4})', raw_year).group(1)
-
-    return {'distance':distance.lower(),'name':name,'year':year}
+    try:
+        distance = root.xpath("//a[@class='event_selected_link']")[0].text
+        name = root.xpath('//h1[@class="event-title"]')[0].text
+        raw_year = root.xpath('//span[@class="event-date"]')[0].text
+        year = re.search('(\d{4})', raw_year).group(1)
+        return {'distance':distance.lower(),'name':name,'year':year}
+    except Exception as e: 
+        logger.error("failed to parse event page,%s",repr(e))
+    return None
 
 def build_athleat_result_data(data, event_data):
     #parse the event page first
@@ -45,12 +50,19 @@ def build_athleat_result_data(data, event_data):
         event_map = {'first_name':data['firstname'],'last_name':data['lastname'],
                      'ultrasignup_id':data['participant_id'], 'age':data['age'],
                      'gender':data['gender'], 'place':data['place']}
-        #convert strings to correct data types
         event_map['time'] = int(data['time'])
+    else:
+        logger.error("result is missing keys: %s",[item for item in required_keys if item not in data.keys()])
+        return None
+    
+    #convert strings to correct data types 
+    if set({'distance','name','year'}).issubset(event_data.keys()):        
         event_map['distance'] = event_data['distance']
         event_map['event_name'] = event_data['name']
         event_map['year'] = event_data['year']
-
+    else:
+        logger.error("event is missing keys: %s",[item for item in {'distance','name','year'} if item not in event_data.keys()])
+        return None
     return event_map
 
 
@@ -59,6 +71,32 @@ def command_callback(ch, method, prop, body):
     print(f"recived shutdown from user\n{decoded}\n")
     if 'shutdown' in decoded:
         ch.stop_consuming()
+
+def set_logger():
+        global logger
+        console = logging.StreamHandler(stream=sys.stdout)
+        console.setLevel(logging.WARNING)
+
+        # set up logging to file
+        logging.basicConfig(
+            filename='db_manager.log',
+            level=logging.INFO, 
+            format= '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s',
+            datefmt='%H:%M:%S',
+            handlers=[
+            console,
+            ]
+        )
+
+        # set up logging to console
+        
+        # set a format which is simpler for console use
+        formatter = logging.Formatter('[%(asctime)s] %(name)-12s: %(levelname)-8s %(message)s')
+        console.setFormatter(formatter)
+        # add the handler to the root logger
+        logging.getLogger('').addHandler(console)
+        logger = logging.getLogger(__name__)
+
 
 def main():
     global config
@@ -91,6 +129,9 @@ def main():
     db = Db_manager(config)
 
     channel.start_consuming()
+
+def init():
+    set_logger()
 
 if __name__ == "__main__":
     main()

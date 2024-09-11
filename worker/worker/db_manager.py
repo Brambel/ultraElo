@@ -69,7 +69,10 @@ class Db_manager():
         self.create_tables_if_none(self)
 
     def set_logger(self):
-        # set db_manager first
+        # set up logging to console
+        console = logging.StreamHandler(stream=sys.stdout)
+        console.setLevel(logging.WARNING)
+
         # set up logging to file
         logging.basicConfig(
             filename='db_manager.log',
@@ -81,9 +84,7 @@ class Db_manager():
             ]
         )
 
-        # set up logging to console
-        console = logging.StreamHandler(stream=sys.stdout)
-        console.setLevel(logging.WARNING)
+        
         # set a format which is simpler for console use
         formatter = logging.Formatter('[%(asctime)s] %(name)-12s: %(levelname)-8s %(message)s')
         console.setFormatter(formatter)
