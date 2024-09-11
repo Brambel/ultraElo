@@ -4,7 +4,11 @@ import configparser
 import datetime
 import json
 import os
+import re
 import pika
+
+from worker.worker.db_manager import Db_manager
+from lxml import html
 #from db_manager import Db_manager
 
 config = None
@@ -22,18 +26,18 @@ def process_athleat_result(ch, method, prop, body):
     #this is where we would send the message back to the user
     print(f"{datetime.datetime.now().strftime("%m/%d %H:%M:%S")}, {data}")
 
-def notify_user(n, dic):
-    s = ""
-    for key,val in dic.items():
-        s+=f"{key}"
-        if val > 1:
-            s+=f"^{val}, "
-        else:
-            s+=","
+def parse_event_page(event_page):
+    root = html.fromstring(event_page)
+    
+    distance = root.xpath("//a[@class='event_selected_link']")[0].text
+    name = root.xpath('//h1[@class="event-title"]')[0].text
+    raw_year = root.xpath('//span[@class="event-date"]')[0].text
+    year = re.search('(\d{4})', raw_year).group(1)
 
-    print(f"the factors for {n}: {s}")
+    return {'distance':distance.lower(),'name':name,'year':year}
 
-def build_athleat_result_data(data):
+def build_athleat_result_data(data, event_data):
+    #parse the event page first
     event_map = None
     required_keys = {'firstname','lastname','participant_id','age','gender', 'place', 'time'}
     if set(required_keys).issubset(data.keys()):
@@ -43,6 +47,9 @@ def build_athleat_result_data(data):
                      'gender':data['gender'], 'place':data['place']}
         #convert strings to correct data types
         event_map['time'] = int(data['time'])
+        event_map['distance'] = event_data['distance']
+        event_map['event_name'] = event_data['name']
+        event_map['year'] = event_data['year']
 
     return event_map
 
