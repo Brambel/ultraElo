@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import pika
+import requests
 
 from worker.worker.db_manager import Db_manager
 from lxml import html
@@ -28,6 +29,18 @@ def process_athleat_result(ch, method, prop, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
     #this is where we would send the message back to the user
     print(f"{datetime.datetime.now().strftime("%m/%d %H:%M:%S")}, {data}")
+
+def retrieve_event_page(id):
+    url = f"https://ultrasignup.com/results_event.aspx?did={id}"
+
+    payload = {}
+    headers = {
+    'Cookie': '.ASPXANONYMOUS=Hci2dBUvlEn_L-yatdFaU7RC4vEpMGe86jIzzSNww-IXCHv2HPNN_tTamdSd5_gcAWs1xykjkI_XVT8Xr13WbfVYK4Yj7-JFrqq9jcd6wGBm6njfQrd29ZI9qbuglF8NYAqOrw2; ARRAffinity=bf394d888a6bbe94ff674398f497250ca008e4482b502b39d81a73a24c8ace03; ARRAffinitySameSite=bf394d888a6bbe94ff674398f497250ca008e4482b502b39d81a73a24c8ace03'
+    }
+
+    response = requests.get( url, headers=headers, data=payload)
+
+    return response.text
 
 def parse_event_page(event_page):
     root = html.fromstring(event_page)
