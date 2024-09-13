@@ -54,6 +54,16 @@ def parse_event_page(event_page):
         logger.error("failed to parse event page,%s",repr(e))
     return None
 
+def retrieve_athleat_page(id):
+    url = f"https://ultrasignup.com/service/events.svc/results/{id}/1/json"
+
+    payload = {}
+    headers = {'Cookie': '.ASPXANONYMOUS=Hci2dBUvlEn_L-yatdFaU7RC4vEpMGe86jIzzSNww-IXCHv2HPNN_tTamdSd5_gcAWs1xykjkI_XVT8Xr13WbfVYK4Yj7-JFrqq9jcd6wGBm6njfQrd29ZI9qbuglF8NYAqOrw2; ARRAffinity=bf394d888a6bbe94ff674398f497250ca008e4482b502b39d81a73a24c8ace03; ARRAffinitySameSite=bf394d888a6bbe94ff674398f497250ca008e4482b502b39d81a73a24c8ace03'}
+
+    response = requests.get( url, headers=headers, data=payload)
+
+    return json.loads(response.text)
+
 def build_athleat_result_data(data, event_data):
     #parse the event page first
     event_map = None
