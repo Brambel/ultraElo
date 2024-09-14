@@ -22,7 +22,6 @@ def test_basic_objects(session):
     event1 = Event(name="race1",location="usa",date="8/15/87",distance="50k")
     athleat1 = Athleat(first_name="jim",last_name="bob",age="37",overall_elo=2000)
     result = Result(place=1,time="0:30:00", event=event1, athleat=athleat1)
-    session.add(event1)
     session.add(result)
     session.commit()
 
@@ -47,13 +46,11 @@ def test_add_events(session):
     path = os.path.split(__file__)[0]
     file = os.path.join(path,'resources/athleats.json')
     result_map = []
-    
-    #test this first then we'll check that we've added it to the db
-    #event_map = parse_event_page()
+
 
     with open(file, 'r') as file:
         data = json.load(file)
         for blob in data:
-            event_with_athleat = build_athleat_result_data(blob, {'distance':"10k",'name':"fake race time",'year':2024})
+            event_with_athleat = build_athleat_result_data(blob)
             #add in event blob
             result_map.append(event_with_athleat)

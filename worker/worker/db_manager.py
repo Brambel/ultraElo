@@ -5,7 +5,9 @@ import os
 import sys
 from typing import List, Optional
 from sqlalchemy import ForeignKey, create_engine
-from sqlalchemy.orm import DeclarativeBase, mapped_column, relationship, Mapped
+from sqlalchemy.orm import DeclarativeBase, mapped_column, relationship, Mapped, sessionmaker
+
+from worker.worker import scraped_data
 
 #ORM classes
 class Base(DeclarativeBase):
@@ -62,11 +64,11 @@ class Result(Base):
 
 class Db_manager():
 
-    def __init__(self, config):
+    def __init__(self, config=None):
         self.config = config
 
         self.connect_db(self)
-        self.create_tables_if_none(self)
+        
 
     def set_logger(self):
         # set up logging to console
@@ -97,8 +99,18 @@ class Db_manager():
         alch_log.setLevel(logging.INFO)
         #may want to see about setting a diff log level stream?
 
-    def add_athleat_result(result_map):
-        #need to impliment
+    def add_event_results(self, results: scraped_data):
+        return None
+    #add in the even and then each raw from the results
+    #still need to write test and plum together
+        event = Event(name=results.get_name(),location=results.get_location(),
+                      date=result.get_year(),distance=results.get_distance())
+        
+        for entry in results.athleat_maps():
+            athleat = Athleat(first_name=entry['first_name'],last_name=entry['last_name'],age=entry['age'])
+            result = Result(place=1,time=entry['time'], event=event, athleat=athleat)
+
+        self.session.add(result)
         pass
 
     def connect_db(self):
@@ -109,4 +121,5 @@ class Db_manager():
         p = os.environ.get("DB_PORT","find_default")
         n = os.environ.get("DB_NAME","find_default")
         self.engine = create_engine(f"postgresql://{usr}:{pw}@{h}:{p}/{n}")
-        
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()

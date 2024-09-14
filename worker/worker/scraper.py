@@ -10,6 +10,7 @@ import sys
 import pika
 import requests
 
+from worker.worker import scraped_data
 from worker.worker.db_manager import Db_manager
 from lxml import html
 #from db_manager import Db_manager
@@ -30,6 +31,22 @@ def process_athleat_result(ch, method, prop, body):
     #this is where we would send the message back to the user
     print(f"{datetime.datetime.now().strftime("%m/%d %H:%M:%S")}, {data}")
 
+#parse a single page id from ultra signup
+def parse_ultra_event_page(id):
+    event_text = retrieve_event_page(id)
+    event_data = parse_event_page(event_text)
+
+    #make sure the event data came back correct
+    if event_data:
+        data = scraped_data(event_data)
+        athleat_blobs = json.load(retrieve_athleat_page(id))
+        for blob in athleat_blobs:
+            data.add_athleat_data(build_athleat_result_data(blob))
+        
+        db.add_event_results(data)
+
+    #need code to mark id as used, errored, or unused
+
 def retrieve_event_page(id):
     url = f"https://ultrasignup.com/results_event.aspx?did={id}"
 
@@ -48,10 +65,22 @@ def parse_event_page(event_page):
         distance = root.xpath("//a[@class='event_selected_link']")[0].text
         name = root.xpath('//h1[@class="event-title"]')[0].text
         raw_year = root.xpath('//span[@class="event-date"]')[0].text
+        location = root.xpath('//a[@class="ace_btn dropbtn dis"]')[0].attrib
+        loc = "unknown"
+        #try to pull out location from the clander 
+        if location.has_key('data-ace'):
+            loc = re.search('"location":"(.*?)"', location['data-ace']).group(1)
+
         year = re.search('(\d{4})', raw_year).group(1)
-        return {'distance':distance.lower(),'name':name,'year':year}
+        result = {'distance':distance.lower(),'name':name,'year':year, 'location':loc}
+        if set({'distance','name','year','location'}).issubset(result.keys()):  
+            return result
+        else:
+            logger.error("event is missing keys: %s",[item for item in {'distance','name','year'} if item not in event_data.keys()])
+            return None
     except Exception as e: 
         logger.error("failed to parse event page,%s",repr(e))
+    
     return None
 
 def retrieve_athleat_page(id):
@@ -64,7 +93,7 @@ def retrieve_athleat_page(id):
 
     return json.loads(response.text)
 
-def build_athleat_result_data(data, event_data):
+def build_athleat_result_data(data):
     #parse the event page first
     event_map = None
     required_keys = {'firstname','lastname','participant_id','age','gender', 'place', 'time'}
@@ -77,15 +106,7 @@ def build_athleat_result_data(data, event_data):
     else:
         logger.error("result is missing keys: %s",[item for item in required_keys if item not in data.keys()])
         return None
-    
-    #convert strings to correct data types 
-    if set({'distance','name','year'}).issubset(event_data.keys()):        
-        event_map['distance'] = event_data['distance']
-        event_map['event_name'] = event_data['name']
-        event_map['year'] = event_data['year']
-    else:
-        logger.error("event is missing keys: %s",[item for item in {'distance','name','year'} if item not in event_data.keys()])
-        return None
+        
     return event_map
 
 
@@ -125,6 +146,8 @@ def main():
     global config
     global db
     
+    set_logger()
+
     #load configs
     config = configparser.ConfigParser()
     config.read("config.ini")
@@ -153,8 +176,7 @@ def main():
 
     channel.start_consuming()
 
-def init():
-    set_logger()
+    
 
 if __name__ == "__main__":
     main()

@@ -15,7 +15,7 @@ def test_build_athleat_result_data(data=None):
             data = json.load(file)
 
     for blob in data:
-        result_map.append(scraper.build_athleat_result_data(blob, {'distance':"10k",'name':"fake race time",'year':2024}))
+        result_map.append(scraper.build_athleat_result_data(blob))
 
     entry1 = result_map[0]
     entry2 = result_map[1]
@@ -29,8 +29,8 @@ def test_build_athleat_result_data(data=None):
     assert entry1['place'] == 1
     assert entry1['time'] == 2954488
 
-    assert len(entry2) == 10
-    assert len(entry3) == 10
+    assert len(entry2) == 7
+    assert len(entry3) == 7
 
 def test_parse_event_page(html_cont=None):
     if not html_cont:
@@ -42,6 +42,7 @@ def test_parse_event_page(html_cont=None):
     assert event_map['distance'] == "10k"
     assert event_map['name'] == "Jewel of the Valley"
     assert event_map['year'] == "2023"
+    assert event_map['location'] == "Yakima, WA"
 
 def test_parse_event_page_bad_data():
     assert scraper.parse_event_page("<head></head>") == None
@@ -49,14 +50,7 @@ def test_parse_event_page_bad_data():
 
 def test_build_athleat_bad_data():
     #missing parts of blob
-    assert not scraper.build_athleat_result_data({"firstname": "bob"}, {'distance':"10k",'name':"fake race time",'year':2024})
-    
-    #missing parts of event
-    file = os.path.join(path,'resources/athleats.json')
-
-    with open(file, 'r') as file:
-        data = json.load(file)
-        assert not scraper.build_athleat_result_data(data[0], {})
+    assert not scraper.build_athleat_result_data({"firstname": "bob"})
 
 def test_retrieve_event_page():
     id = 99406
